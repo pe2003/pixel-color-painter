@@ -193,14 +193,14 @@
         <div id="canvas-container"></div>
         <div id="sidebar">
             <h2>Pixel Painter</h2>
-            <input type="file" id="image-upload" style="display: none;">
+            <input type="file" id="image-upload">
             <button id="select-image-btn">Select Image</button>
             <img id="preview-image" style="display: none;">
             <div id="color-list"></div>
         </div>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.min.js"></script>
     <script>
         let img;
         let pixelSize = 20;
@@ -231,30 +231,16 @@
                 const file = e.target.files[0];
                 if (file) {
                     console.log('File selected:', file.name);
-
-                    // Используем FileReader для чтения файла
-                    const reader = new FileReader();
-                    reader.onload = function(event) {
-                        console.log('FileReader loaded file');
-                        const imgDataUrl = event.target.result;
-
-                        // Показываем предпросмотр
-                        document.getElementById('preview-image').src = imgDataUrl;
-                        document.getElementById('preview-image').style.display = 'block';
-
-                        // Загружаем изображение в p5.js
-                        img = loadImage(imgDataUrl, () => {
-                            console.log('Image loaded successfully via p5.js');
-                            setupCanvas();
-                            redraw();
-                        }, () => {
-                            console.error('Failed to load image via p5.js');
-                        });
-                    };
-                    reader.onerror = function() {
-                        console.error('FileReader error');
-                    };
-                    reader.readAsDataURL(file);
+                    // Возвращаем рабочую логику загрузки
+                    img = loadImage(URL.createObjectURL(file), () => {
+                        console.log('Image loaded successfully');
+                        setupCanvas();
+                        redraw(); // Добавляем redraw для обновления канваса
+                    }, () => {
+                        console.error('Failed to load image');
+                    });
+                    document.getElementById('preview-image').src = URL.createObjectURL(file);
+                    document.getElementById('preview-image').style.display = 'block';
                 } else {
                     console.log('No file selected');
                 }
@@ -264,6 +250,7 @@
         function setup() {
             let canvas = createCanvas(100, 100);
             canvas.parent('canvas-container');
+            noLoop(); // Оставляем noLoop, так как он был в рабочей версии
         }
 
         function setupCanvas() {
@@ -289,7 +276,7 @@
 
             console.log('New dimensions:', newWidth, newHeight);
             img.resize(newWidth, newHeight);
-            resizeCanvas(newWidth, newHeight);
+            resizeCanvas(newWidth, newHeight); // Добавляем resizeCanvas для корректного изменения размера
             processImage();
             drawGrid();
             createPalette();
