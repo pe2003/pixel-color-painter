@@ -56,9 +56,9 @@
             border-radius: 5px;
             cursor: pointer;
             font-size: 14px;
-            position: relative; /* Добавлено */
-            z-index: 10; /* Добавлено */
-            display: block; /* Добавлено для лучшей видимости */
+            position: relative;
+            z-index: 10;
+            display: block;
         }
 
         #color-list {
@@ -106,7 +106,6 @@
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
 
-        /* Адаптация для мобильных устройств */
         @media (max-width: 768px) {
             body {
                 padding: 5px;
@@ -133,7 +132,7 @@
             #image-upload {
                 font-size: 12px;
                 padding: 6px;
-                z-index: 10; /* Добавлено */
+                z-index: 10;
             }
 
             .color-box {
@@ -165,7 +164,7 @@
             #image-upload {
                 font-size: 10px;
                 padding: 4px;
-                z-index: 10; /* Добавлено */
+                z-index: 10;
             }
 
             h2 {
@@ -179,7 +178,7 @@
         <div id="canvas-container"></div>
         <div id="sidebar">
             <h2>Pixel Painter</h2>
-            <input type="file" id="image-upload"> <!-- Убрали accept="image/*" -->
+            <input type="file" id="image-upload">
             <img id="preview-image" style="display: none;">
             <div id="color-list"></div>
         </div>
@@ -200,28 +199,40 @@
         function preload() {
             const imageUpload = document.getElementById('image-upload');
             imageUpload.addEventListener('click', () => {
-                console.log('Image upload clicked'); // Отладка
+                console.log('Image upload clicked');
             });
             imageUpload.addEventListener('change', function(e) {
-                console.log('File input changed'); // Отладка
+                console.log('File input changed');
                 const file = e.target.files[0];
                 if (file) {
-                    console.log('File selected:', file.name); // Отладка
-                    img = loadImage(URL.createObjectURL(file), setupCanvas, () => {
-                        console.error('Failed to load image'); // Отладка
-                   .Concurrent                    document.getElementById('preview-image').src = URL.createObjectURL(file);
+                    console.log('File selected:', file.name);
+                    // Загружаем изображение
+                    img = loadImage(URL.createObjectURL(file), () => {
+                        console.log('Image loaded successfully');
+                        setupCanvas(); // Вызываем setupCanvas после успешной загрузки
+                        redraw(); // Перерисовываем канвас
+                    }, () => {
+                        console.error('Failed to load image');
+                    });
+                    // Показываем предпросмотр
+                    document.getElementById('preview-image').src = URL.createObjectURL(file);
                     document.getElementById('preview-image').style.display = 'block';
                 } else {
-                    console.log('No file selected'); // Отладка
+                    console.log('No file selected');
                 }
             });
         }
 
         function setup() {
-            noLoop();
+            // Создаём пустой канвас, который будет обновлён позже
+            let canvas = createCanvas(100, 100); // Начальный размер, будет изменён
+            canvas.parent('canvas-container');
+            // Убираем noLoop(), чтобы включить цикл отрисовки
+            // loop(); // Раскомментируйте, если хотите постоянную отрисовку
         }
 
         function setupCanvas() {
+            console.log('Setting up canvas');
             let aspectRatio = img.width / img.height;
             let newWidth, newHeight;
 
@@ -241,15 +252,16 @@
                 }
             }
 
+            console.log('New dimensions:', newWidth, newHeight);
             img.resize(newWidth, newHeight);
-            let canvas = createCanvas(newWidth, newHeight);
-            canvas.parent('canvas-container');
+            resizeCanvas(newWidth, newHeight); // Изменяем размер канваса
             processImage();
             drawGrid();
             createPalette();
         }
 
         function processImage() {
+            console.log('Processing image');
             img.loadPixels();
             colors = [];
             grid = [];
@@ -263,6 +275,7 @@
                 }
                 grid.push(row);
             }
+            console.log('Image processed, grid created');
         }
 
         function findClosestColor(c) {
@@ -282,7 +295,15 @@
             return colors.length - 1;
         }
 
+        function draw() {
+            // Отрисовка только если grid существует
+            if (grid.length > 0) {
+                drawGrid();
+            }
+        }
+
         function drawGrid() {
+            console.log('Drawing grid');
             background(255);
             for (let y = 0; y < grid.length; y++) {
                 for (let x = 0; x < grid[y].length; x++) {
@@ -305,6 +326,7 @@
         }
 
         function createPalette() {
+            console.log('Creating palette');
             let colorList = document.getElementById('color-list');
             colorList.innerHTML = '';
             
@@ -367,7 +389,7 @@
             if (selectedColor !== null && x >= 0 && x < width && y >= 0 && y < height) {
                 let gridX = floor(x / pixelSize);
                 let gridY = floor(y / pixelSize);
-                if (grid[gridY][gridX].index === selectedColor) {
+                if (grid[gridY] && grid[gridY][gridX] && grid[gridY][gridX].index === selectedColor) {
                     grid[gridY][gridX].colored = true;
                     drawGrid();
                 }
