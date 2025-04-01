@@ -28,7 +28,17 @@
             flex-direction: row;
             align-items: flex-start;
         }
-
+#image-upload {
+    margin-bottom: 15px;
+    padding: 8px;
+    width: 100%;
+    border: 2px dashed #ccc;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    position: relative; /* Добавляем */
+    z-index: 10; /* Добавляем */
+}
         #canvas-container {
             background: white;
             border-radius: 15px;
@@ -194,13 +204,17 @@
 
         function preload() {
             document.getElementById('image-upload').addEventListener('change', function(e) {
-                const file = e.target.files[0];
-                if (file) {
-                    img = loadImage(URL.createObjectURL(file), setupCanvas);
-                    document.getElementById('preview-image').src = URL.createObjectURL(file);
-                    document.getElementById('preview-image').style.display = 'block';
-                }
-            });
+    console.log('File input changed'); // Добавляем для отладки
+    const file = e.target.files[0];
+    if (file) {
+        console.log('File selected:', file.name); // Добавляем для отладки
+        img = loadImage(URL.createObjectURL(file), setupCanvas);
+        document.getElementById('preview-image').src = URL.createObjectURL(file);
+        document.getElementById('preview-image').style.display = 'block';
+    } else {
+        console.log('No file selected'); // Добавляем для отладки
+    }
+});
         }
 
         function setup() {
