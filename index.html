@@ -1,1 +1,378 @@
-биол
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pixel Color Painter</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            display: flex;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            margin: 0;
+            padding: 10px;
+            min-height: 100vh;
+            align-items: flex-start;
+            justify-content: center;
+        }
+
+        #container {
+            display: flex;
+            gap: 20px;
+            max-width: 1920px;
+            width: 100%;
+            flex-direction: row;
+            align-items: flex-start;
+        }
+
+        #canvas-container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            padding: 10px;
+            max-width: 100%;
+            overflow: auto;
+        }
+
+        #sidebar {
+            width: 250px;
+            background: white;
+            border-radius: 15px;
+            padding: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        #image-upload {
+            margin-bottom: 15px;
+            padding: 8px;
+            width: 100%;
+            border: 2px dashed #ccc;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            position: relative; /* Добавлено */
+            z-index: 10; /* Добавлено */
+            display: block; /* Добавлено для лучшей видимости */
+        }
+
+        #color-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .color-box {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            color: white;
+            text-shadow: 0 0 2px black;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .color-box:hover {
+            transform: scale(1.1);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .color-box.selected {
+            border: 3px solid #333;
+            transform: scale(1.1);
+        }
+
+        h2 {
+            color: #333;
+            margin-top: 0;
+            font-size: 20px;
+        }
+
+        #preview-image {
+            max-width: 100%;
+            max-height: 150px;
+            margin-top: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        /* Адаптация для мобильных устройств */
+        @media (max-width: 768px) {
+            body {
+                padding: 5px;
+            }
+
+            #container {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            #canvas-container {
+                padding: 5px;
+                max-height: 50vh;
+                overflow: auto;
+            }
+
+            #sidebar {
+                width: 100%;
+                max-width: 100%;
+                padding: 10px;
+                max-height: none;
+            }
+
+            #image-upload {
+                font-size: 12px;
+                padding: 6px;
+                z-index: 10; /* Добавлено */
+            }
+
+            .color-box {
+                width: 35px;
+                height: 35px;
+                font-size: 12px;
+            }
+
+            h2 {
+                font-size: 16px;
+            }
+
+            #preview-image {
+                max-height: 120px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            #canvas-container {
+                max-height: 40vh;
+            }
+
+            .color-box {
+                width: 30px;
+                height: 30px;
+                font-size: 10px;
+            }
+
+            #image-upload {
+                font-size: 10px;
+                padding: 4px;
+                z-index: 10; /* Добавлено */
+            }
+
+            h2 {
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <div id="canvas-container"></div>
+        <div id="sidebar">
+            <h2>Pixel Painter</h2>
+            <input type="file" id="image-upload"> <!-- Убрали accept="image/*" -->
+            <img id="preview-image" style="display: none;">
+            <div id="color-list"></div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.min.js"></script>
+    <script>
+        let img;
+        let pixelSize = 20;
+        let colors = [];
+        let grid = [];
+        let selectedColor = null;
+        let maxWidth = 1920;
+        let maxHeight = 1080;
+        let isMouseDown = false;
+        let isTouching = false;
+
+        function preload() {
+            const imageUpload = document.getElementById('image-upload');
+            imageUpload.addEventListener('click', () => {
+                console.log('Image upload clicked'); // Отладка
+            });
+            imageUpload.addEventListener('change', function(e) {
+                console.log('File input changed'); // Отладка
+                const file = e.target.files[0];
+                if (file) {
+                    console.log('File selected:', file.name); // Отладка
+                    img = loadImage(URL.createObjectURL(file), setupCanvas, () => {
+                        console.error('Failed to load image'); // Отладка
+                   .Concurrent                    document.getElementById('preview-image').src = URL.createObjectURL(file);
+                    document.getElementById('preview-image').style.display = 'block';
+                } else {
+                    console.log('No file selected'); // Отладка
+                }
+            });
+        }
+
+        function setup() {
+            noLoop();
+        }
+
+        function setupCanvas() {
+            let aspectRatio = img.width / img.height;
+            let newWidth, newHeight;
+
+            if (img.width > img.height) {
+                newWidth = min(maxWidth, img.width);
+                newHeight = newWidth / aspectRatio;
+                if (newHeight > maxHeight) {
+                    newHeight = maxHeight;
+                    newWidth = newHeight * aspectRatio;
+                }
+            } else {
+                newHeight = min(maxHeight, img.height);
+                newWidth = newHeight * aspectRatio;
+                if (newWidth > maxWidth) {
+                    newWidth = maxWidth;
+                    newHeight = newWidth / aspectRatio;
+                }
+            }
+
+            img.resize(newWidth, newHeight);
+            let canvas = createCanvas(newWidth, newHeight);
+            canvas.parent('canvas-container');
+            processImage();
+            drawGrid();
+            createPalette();
+        }
+
+        function processImage() {
+            img.loadPixels();
+            colors = [];
+            grid = [];
+
+            for (let y = 0; y < img.height; y += pixelSize) {
+                let row = [];
+                for (let x = 0; x < img.width; x += pixelSize) {
+                    let c = img.get(x, y);
+                    let colorIndex = findClosestColor(c);
+                    row.push({ index: colorIndex, colored: false });
+                }
+                grid.push(row);
+            }
+        }
+
+        function findClosestColor(c) {
+            let r = red(c);
+            let g = green(c);
+            let b = blue(c);
+            
+            for (let i = 0; i < colors.length; i++) {
+                let diff = dist(r, g, b, 
+                              red(colors[i]), 
+                              green(colors[i]), 
+                              blue(colors[i]));
+                if (diff < 50) return i;
+            }
+            
+            colors.push(c);
+            return colors.length - 1;
+        }
+
+        function drawGrid() {
+            background(255);
+            for (let y = 0; y < grid.length; y++) {
+                for (let x = 0; x < grid[y].length; x++) {
+                    let cell = grid[y][x];
+                    let colorIndex = cell.index;
+                    if (cell.colored) {
+                        fill(colors[colorIndex]);
+                        stroke(200);
+                        rect(x * pixelSize, y * pixelSize, pixelSize, pixelSize);
+                    } else {
+                        fill(255);
+                        stroke(200);
+                        rect(x * pixelSize, y * pixelSize, pixelSize, pixelSize);
+                        fill(0);
+                        textAlign(CENTER, CENTER);
+                        text(colorIndex, x * pixelSize + pixelSize/2, y * pixelSize + pixelSize/2);
+                    }
+                }
+            }
+        }
+
+        function createPalette() {
+            let colorList = document.getElementById('color-list');
+            colorList.innerHTML = '';
+            
+            colors.forEach((color, index) => {
+                let div = document.createElement('div');
+                div.className = 'color-box';
+                div.style.backgroundColor = `rgb(${red(color)}, ${green(color)}, ${blue(color)})`;
+                div.innerText = index;
+                div.onclick = () => {
+                    selectedColor = index;
+                    document.querySelectorAll('.color-box').forEach(box => box.classList.remove('selected'));
+                    div.classList.add('selected');
+                };
+                colorList.appendChild(div);
+            });
+        }
+
+        function mousePressed() {
+            if (mouseButton === LEFT) {
+                isMouseDown = true;
+                colorCell(mouseX, mouseY);
+            }
+        }
+
+        function mouseReleased() {
+            if (mouseButton === LEFT) {
+                isMouseDown = false;
+            }
+        }
+
+        function mouseDragged() {
+            if (isMouseDown) {
+                colorCell(mouseX, mouseY);
+            }
+        }
+
+        function touchStarted() {
+            isTouching = true;
+            let touchX = touches[0]?.x || mouseX;
+            let touchY = touches[0]?.y || mouseY;
+            colorCell(touchX, touchY);
+            return false;
+        }
+
+        function touchMoved() {
+            if (isTouching) {
+                let touchX = touches[0]?.x || mouseX;
+                let touchY = touches[0]?.y || mouseY;
+                colorCell(touchX, touchY);
+            }
+            return false;
+        }
+
+        function touchEnded() {
+            isTouching = false;
+            return false;
+        }
+
+        function colorCell(x, y) {
+            if (selectedColor !== null && x >= 0 && x < width && y >= 0 && y < height) {
+                let gridX = floor(x / pixelSize);
+                let gridY = floor(y / pixelSize);
+                if (grid[gridY][gridX].index === selectedColor) {
+                    grid[gridY][gridX].colored = true;
+                    drawGrid();
+                }
+            }
+        }
+    </script>
+</body>
+</html>
