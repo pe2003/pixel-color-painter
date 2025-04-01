@@ -1,0 +1,11 @@
+{
+  "name": "pixel-color-painter",
+  "version": "1.0.0",
+  "description": "A pixel art coloring app",
+  "scripts": {
+    "start": "serve public"
+  },
+  "dependencies": {
+    "serve": "^14.2.3"
+  }
+}
