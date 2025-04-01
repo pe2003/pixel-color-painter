@@ -61,6 +61,21 @@
             display: block;
         }
 
+        #select-image-btn {
+            margin-top: 10px;
+            padding: 8px 16px;
+            font-size: 14px;
+            cursor: pointer;
+            border: none;
+            background-color: #007bff;
+            color: white;
+            border-radius: 5px;
+        }
+
+        #select-image-btn:hover {
+            background-color: #0056b3;
+        }
+
         #color-list {
             display: flex;
             flex-wrap: wrap;
@@ -178,13 +193,14 @@
         <div id="canvas-container"></div>
         <div id="sidebar">
             <h2>Pixel Painter</h2>
-            <input type="file" id="image-upload">
+            <input type="file" id="image-upload" style="display: none;">
+            <button id="select-image-btn">Select Image</button>
             <img id="preview-image" style="display: none;">
             <div id="color-list"></div>
         </div>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
     <script>
         let img;
         let pixelSize = 20;
@@ -198,25 +214,47 @@
 
         function preload() {
             const imageUpload = document.getElementById('image-upload');
-            imageUpload.addEventListener('click', () => {
-                console.log('Image upload clicked');
+            const selectImageBtn = document.getElementById('select-image-btn');
+
+            // Кнопка для выбора файла
+            selectImageBtn.addEventListener('click', () => {
+                console.log('Select image button clicked');
+                imageUpload.click();
             });
+
+            imageUpload.addEventListener('click', () => {
+                console.log('Image upload input clicked');
+            });
+
             imageUpload.addEventListener('change', function(e) {
                 console.log('File input changed');
                 const file = e.target.files[0];
                 if (file) {
                     console.log('File selected:', file.name);
-                    // Загружаем изображение
-                    img = loadImage(URL.createObjectURL(file), () => {
-                        console.log('Image loaded successfully');
-                        setupCanvas(); // Вызываем setupCanvas после успешной загрузки
-                        redraw(); // Перерисовываем канвас
-                    }, () => {
-                        console.error('Failed to load image');
-                    });
-                    // Показываем предпросмотр
-                    document.getElementById('preview-image').src = URL.createObjectURL(file);
-                    document.getElementById('preview-image').style.display = 'block';
+
+                    // Используем FileReader для чтения файла
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        console.log('FileReader loaded file');
+                        const imgDataUrl = event.target.result;
+
+                        // Показываем предпросмотр
+                        document.getElementById('preview-image').src = imgDataUrl;
+                        document.getElementById('preview-image').style.display = 'block';
+
+                        // Загружаем изображение в p5.js
+                        img = loadImage(imgDataUrl, () => {
+                            console.log('Image loaded successfully via p5.js');
+                            setupCanvas();
+                            redraw();
+                        }, () => {
+                            console.error('Failed to load image via p5.js');
+                        });
+                    };
+                    reader.onerror = function() {
+                        console.error('FileReader error');
+                    };
+                    reader.readAsDataURL(file);
                 } else {
                     console.log('No file selected');
                 }
@@ -224,11 +262,8 @@
         }
 
         function setup() {
-            // Создаём пустой канвас, который будет обновлён позже
-            let canvas = createCanvas(100, 100); // Начальный размер, будет изменён
+            let canvas = createCanvas(100, 100);
             canvas.parent('canvas-container');
-            // Убираем noLoop(), чтобы включить цикл отрисовки
-            // loop(); // Раскомментируйте, если хотите постоянную отрисовку
         }
 
         function setupCanvas() {
@@ -254,7 +289,7 @@
 
             console.log('New dimensions:', newWidth, newHeight);
             img.resize(newWidth, newHeight);
-            resizeCanvas(newWidth, newHeight); // Изменяем размер канваса
+            resizeCanvas(newWidth, newHeight);
             processImage();
             drawGrid();
             createPalette();
@@ -296,7 +331,6 @@
         }
 
         function draw() {
-            // Отрисовка только если grid существует
             if (grid.length > 0) {
                 drawGrid();
             }
